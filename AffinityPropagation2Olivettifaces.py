@@ -7,27 +7,25 @@ Created on Sun Jun  7 12:34:16 2020
 """
 
 """
-Este código foi feito em python3
+Este código foi feito em python 3
 Parte do código foi retirada de:
-<https://www.ritchievink.com/blog/2018/05/18/algorithm-breakdown-affinity-propagation/>
+https://www.ritchievink.com/blog/2018/05/18/algorithm-breakdown-affinity-propagation/
 O dataset olivettifaces.gif pode ser baixado em <https://cs.nyu.edu/~roweis/data.html>
 O arquivo olivettifaces.gif deve estar no mesmo diretório do código
 O objetivo é aplicar o algoritmo Affinity Propagation ao dataset acima.
-O resultado final foi 66 Exemplares (clusters), de 40 desejados, e 357 imagens categorizadas corretamente, de 400 disponíveis.
 """
 
-# all the imports needed for this blog
+# Todos os imports necessarios para este trabalho
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import matplotlib.image as mpimg
 
-#importando o arquivo
-#essa função retorna um dataframe com 400 linhas, cada linha "i" é uma imagem transformada em 1 dimensão, presente no dataset original
+# importando o arquivo
+# essa função retorna um dataframe com 400 linhas, cada linha "i" é uma imagem 
+# i transformada em 1 dimensão, presente no dataset original.
 def preparar_arquivo_base(arquivo = "olivettifaces.gif"):
     import pandas as pd
-    #Escolha um dos arquivos a importar
-    #import matplotlib.pyplot as plt
     if (arquivo=="olivettifaces.gif"):
         import matplotlib.image as mpimg
         img = mpimg.imread(arquivo)
@@ -43,9 +41,8 @@ def preparar_arquivo_base(arquivo = "olivettifaces.gif"):
                                 (imagem_coluna-1)*largura+(imagem_coluna-1)//10:(imagem_coluna-1)*largura+(imagem_coluna-1)//10+46]
                 plt.imshow(base3)
                 df2=base3.stack().reset_index().rename(columns={'level_0':'Linha','level_1':'Coluna', 0:'Valores'})        
-                df3=df3.append(df2['Valores'])
-            
-        #resetando os índices
+                df3=df3.append(df2['Valores'])            
+        #reset dos índices
         df3 = df3.reset_index(drop=True)
         df4=df3.T.reset_index(drop=True)
         df4=df4.append(df4.iloc[0,:])
@@ -55,24 +52,34 @@ def preparar_arquivo_base(arquivo = "olivettifaces.gif"):
         base=df4.T
     return base
 
+# base recebe um arquivo com 400 linhas e 2577 colunas, sendo a ultima a classe do vetor de atributos
 base=preparar_arquivo_base()
+# para uma clusterizacao nao se precisa da classe, enstao tiramos ela
 base2=base.iloc[:,:2576]
+# faça a base um numpy
 x=np.array(base2)
 
+# retorna a similaridade, S(i,k) = -(Xi-Xk)^2.
 def similarity(xi, xj):
     return -((xi - xj)**2).sum()
+
+# retorna uma matriz com as similaridades (S) e 2 matrizes 
+# nulas, Responsabilidade (R) e Disponibilidade (A), com dimensão N.
 
 def create_matrices():
     S = np.zeros((x.shape[0], x.shape[0]))
     R = np.array(S)
     A = np.array(S)
-    # compute similarity for every data point.
+    # laço 'for'que calcula a similaridade entre todas as combinações 2 a 2.
     for i in range(x.shape[0]):
         for k in range(x.shape[0]):
             S[i, k] = similarity(x[i], x[k])
     return A, R, S
 
-
+# Cada valor r da matriz R será atualizado com
+# r = r * damping + (1 - damping) * r_
+# r=(1−λ)*r+λ*r_
+# Onde r_(i,k)=s(i,k)−max{a(i,k')+s(i,k')}, com k'≠k
 def update_r(damping=0.9):
     global R
     # For every column k, except for the column with the maximum value the max is the same.
@@ -100,11 +107,10 @@ def update_r(damping=0.9):
     new_val = S - max_matrix
 
     R = R * damping + (1 - damping) * new_val
-    
-#A, R, S = create_matrices()
-#%timeit update_r()
 
-
+# a_(i,k) = min{0,r(k,k)+ ∑ max{0,r(i',k)}, com i'≠{i,k},sei≠k
+# a_(i,k) = ∑ max{0,r(i',k)}, i'≠{k},sei=k
+# a(i,k) = (1−λ)*a(i,k) + λ*a_(i,k)
 def update_a(damping=0.9):
     global A
 
@@ -133,20 +139,26 @@ def update_a(damping=0.9):
     a[k_k_idx, k_k_idx] = w.sum(axis=0) # column wise sum
     A = A * damping + (1 - damping) * a
 
-#A, R, S = create_matrices()
-#%timeit update_a()
-
+################################
+######## TESTE DO CÓDIGO #######
+################################
+    
+# Criando as matrizes para a rede
 A, R, S = create_matrices()
+# preferencia é um atributo que diz quanto um nó pode ser seu representante 
+# comparado com os outros, nesse exemplo escolhemos a preferencia com a mediana dos 
+# valores de S
 preference = np.median(S)
 np.fill_diagonal(S, preference)
+
+# Coeficiente de amortecimento (λ)
 damping = 0.6
 
-figures = []
+# para a condição de parada do laço for abaixo.
 last_sol = np.ones(A.shape)
-last_exemplars = np.array([])
-
-
-c = 0
+# laço de iterações de updates das matrizes
+# ele termina quando tiver N iterações, onde N é o mesmo número de entradas, ou
+# quando os exemplares se mantiverem iguais por 2 iterações.
 for i in range(len(x)):
     update_r(damping)
     update_a(damping)
@@ -156,53 +168,18 @@ for i in range(len(x)):
         print(exemplars, i)
         break
     last_sol = sol
-    last_exemplars = exemplars
 
-'''
-#melhor damping
-#esse trecho facilita a escolha do melhor damping
-for damping in range(20):
-    A, R, S = create_matrices()
-    preference = np.median(S)
-    np.fill_diagonal(S, preference)
-    damping = damping/20
-    
-    figures = []
-    last_sol = np.ones(A.shape)
-    last_exemplars = np.array([])
-    
-    
-    c = 0
-    for i in range(len(x)):
-        update_r(damping)
-        update_a(damping)
-        sol = A + R
-        exemplars = np.unique(np.argmax(sol, axis=1))
-        
-        
-        #if last_exemplars.size != exemplars.size or np.all(last_exemplars != exemplars):
-        #    fig, labels, exemplars = plot_iteration(A, R)
-        #    figures.append(fig)
-        
-        if np.allclose(last_sol, sol):
-            print(exemplars, i)
-            break
-        last_sol = sol
-        last_exemplars = exemplars
-    print("Damping =",damping,"n exemplares =",len(exemplars))
-'''
-
-#guardando os rostos equivalentes entre si
-#esse vetor indica quais são as imagens mais semelhantes "exemplares" de cada imagem i.
+# guardando a relação entre os rostos equivalentes entre si
+# esse vetor indica quais são as imagens mais semelhantes "exemplares" de cada imagem i.
 vetor_rostos_equivalentes = []
-
 sol2 = pd.DataFrame(sol)
 for i in range(len(sol2)):
     #print(sol2.iloc[i,:].idxmax())
     vetor_rostos_equivalentes.append(sol2.iloc[i,:].idxmax())
 
 
-#função que retorna uma foto dentre as 400 disponíveis no dataset. A ordem é da esqueda para a direita, de cima para baixo.
+# função que retorna do dataframe de uma foto dentre as 400 disponíveis no dataset.
+# A ordem é da esqueda para a direita, de cima para baixo.
 def retorne_rosto(numero=0): 
     arquivo="olivettifaces.gif"
     img = mpimg.imread(arquivo)
@@ -243,5 +220,62 @@ for i in range(400):
 acertos = pd.DataFrame(contagem).sum()
 print(len(exemplars),"Exemplares e acertos =",acertos[0])
 
-#66 Exemplares (clusters) e acertos = 357/400
+# Resultado:66 Exemplares (clusters), de 40 desejados, e acertos = 357/400
 
+
+
+################################
+########  Melhor Damping #######
+################################
+# esse trecho facilita a escolha do melhor damping
+divisoes = 100
+amortecimentos = pd.DataFrame(columns={'Damping','N clusters','Acertos'})
+for damping in range(divisoes):
+    #damping = 1
+    print(damping,"/",divisoes)
+    A, R, S = create_matrices()
+    preference = np.median(S)
+    np.fill_diagonal(S, preference)
+    damping = damping/divisoes
+    last_sol = np.ones(A.shape)
+    last_exemplars = np.array([])
+    clusters = []
+    for i in range(len(x)):
+        update_r(damping)
+        update_a(damping)
+        sol = A + R
+        exemplars = np.unique(np.argmax(sol, axis=1))
+        if np.allclose(last_sol, sol):
+            #print(exemplars, i)
+            break
+        last_sol = sol
+    acertos = 0
+    for i in range(400):
+        if(pd.DataFrame(sol).iloc[i,:].idxmax()//10==i//10):
+           acertos=acertos+1
+    #print("Damping =",damping,"n exemplares =",len(exemplars))
+    amortecimentos = amortecimentos.append({'Damping': damping,'N clusters': len(exemplars),'Acertos': acertos}, ignore_index=True)
+    
+##########################################
+
+t = amortecimentos['Damping']
+data1 = amortecimentos['N clusters']
+data2 = amortecimentos['Acertos']
+
+fig, ax1 = plt.subplots()
+
+color = 'tab:red'
+ax1.set_xlabel('Amortecimento (λ)')
+ax1.set_ylabel('N clusters', color=color)
+ax1.plot(t, data1, color=color)
+ax1.tick_params(axis='y', labelcolor=color)
+
+ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+
+color = 'tab:blue'
+ax2.set_ylabel('Acertos', color=color)  # we already handled the x-label with ax1
+ax2.plot(t, data2, color=color)
+ax2.tick_params(axis='y', labelcolor=color)
+
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.show()
