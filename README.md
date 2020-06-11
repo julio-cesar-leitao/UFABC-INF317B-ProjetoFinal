@@ -10,9 +10,9 @@ A relação entre as imagens e seus clusters é dada baixo:
 ![Farmers Market Finder Demo](https://github.com/julio-cesar-leitao/UFABC-INF317B-ProjetoFinal/blob/master/gif-OlivettiFaces.gif)
 ![Farmers Market Finder Demo](https://github.com/julio-cesar-leitao/UFABC-INF317B-ProjetoFinal/blob/master/gif-OlivettiFaces2.gif)
 
+Todo o códifo utilizado foi criado em python 3 e está diponível em:
+https://github.com/julio-cesar-leitao/UFABC-INF317B-ProjetoFinal/blob/master/AffinityPropagation2Olivettifaces.py
 
-<img src="https://github.com/julio-cesar-leitao/UFABC-INF317B-ProjetoFinal/blob/master/Captura%20de%20Tela%202020-06-11%20às%2015.46.43.png" alt="some text"  width="4200" height="2000">
-
-<img src="https://github.com/julio-cesar-leitao/UFABC-INF317B-ProjetoFinal/blob/master/Captura%20de%20Tela%202020-06-11%20às%2015.46.48.png" alt="some text"  width="4200" height="4200">
-
+Meu paper está disponível em:
+https://github.com/julio-cesar-leitao/UFABC-INF317B-ProjetoFinal/blob/master/INF317B-ProjetoFinal.pdf
 
