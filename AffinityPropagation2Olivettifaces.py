@@ -228,8 +228,14 @@ print(len(exemplars),"Exemplares e acertos =",acertos[0])
 ########  Melhor Damping #######
 ################################
 # esse trecho facilita a escolha do melhor damping
-divisoes = 100
-amortecimentos = pd.DataFrame(columns={'Damping','N clusters','Acertos'})
+def mse(xi, xj):
+    xi = xi.T.reset_index(drop=True).T
+    xj = xj.T.reset_index(drop=True).T
+    return ((xi-xj)**2).sum().sum()
+
+
+divisoes = 20
+amortecimentos = pd.DataFrame(columns={'Damping','N clusters','Acertos','MSE'})
 for damping in range(divisoes):
     #damping = 1
     print(damping,"/",divisoes)
@@ -250,13 +256,17 @@ for damping in range(divisoes):
             break
         last_sol = sol
     acertos = 0
+    somaMSE=0
     for i in range(400):
+        #i=0
+        #pd.DataFrame(sol).iloc[i,:].idxmax()
+        #mse(retorne_rosto(i),retorne_rosto(pd.DataFrame(sol).iloc[i,:].idxmax()))
+        #mse(retorne_rosto(0),retorne_rosto(4))
+        somaMSE = somaMSE + mse(retorne_rosto(i),retorne_rosto(pd.DataFrame(sol).iloc[i,:].idxmax()))
         if(pd.DataFrame(sol).iloc[i,:].idxmax()//10==i//10):
            acertos=acertos+1
     #print("Damping =",damping,"n exemplares =",len(exemplars))
-    amortecimentos = amortecimentos.append({'Damping': damping,'N clusters': len(exemplars),'Acertos': acertos}, ignore_index=True)
-    
-##########################################
+    amortecimentos = amortecimentos.append({'Damping': damping,'N clusters': len(exemplars),'Acertos': acertos,'MSE': somaMSE}, ignore_index=True)
 
 t = amortecimentos['Damping']
 data1 = amortecimentos['N clusters']
@@ -270,12 +280,23 @@ ax1.set_ylabel('N clusters', color=color)
 ax1.plot(t, data1, color=color)
 ax1.tick_params(axis='y', labelcolor=color)
 
+'''
 ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
-
 color = 'tab:blue'
 ax2.set_ylabel('Acertos', color=color)  # we already handled the x-label with ax1
 ax2.plot(t, data2, color=color)
 ax2.tick_params(axis='y', labelcolor=color)
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.show()
+'''
+
+
+data3 = amortecimentos['MSE']
+ax3 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+color = 'green'
+ax3.set_ylabel('MSE', color=color)  # we already handled the x-label with ax1
+ax3.plot(t, data3, color=color)
+ax3.tick_params(axis='y', labelcolor=color)
 
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
 plt.show()
